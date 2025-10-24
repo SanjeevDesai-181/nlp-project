@@ -1,0 +1,11 @@
+Flask
+flask-cors
+PyPDF2
+pypdf
+langchain
+langchain-core
+langchain-community
+langchain-google-genai
+langchain-text-splitters
+chromadb
+numpy

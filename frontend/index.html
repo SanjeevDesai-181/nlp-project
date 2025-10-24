@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>QA System Demo</title>
+    <link rel="stylesheet" href="style.css" />
+    <link
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="app-container">
+      <aside class="sidebar">
+        <h2 class="sidebar-title">QA Modes</h2>
+
+        <div class="mode-selector">
+          <label for="qa-mode">Select System:</label>
+          <select id="qa-mode" class="custom-dropdown">
+            <option value="rule-based">Simple Rule-Based (Extractive)</option>
+            <option value="llm-extractive">LLM-Based (Extractive)</option>
+            <option value="llm-generative" selected>
+              LLM-Based (Generative)
+            </option>
+          </select>
+        </div>
+
+        <hr />
+
+        <h3 class="history-title">History</h3>
+        <div id="history-list" class="history-list">
+          <p class="no-history">Start a conversation to see history.</p>
+        </div>
+      </aside>
+
+      <main class="chat-main">
+        <div id="chat-window" class="chat-window">
+          <div class="initial-prompt">
+            <span class="material-icons gemini-icon">psychology</span>
+            <h1>How can I help you with your PDF knowledge base today?</h1>
+          </div>
+        </div>
+
+        <div class="prompt-container-improved">
+          <form class="prompt-form-improved">
+            <input
+              type="text"
+              id="user-input-improved"
+              placeholder="Ask a question about the document... (e.g., 'What is the warranty period?')"
+              required
+            />
+            <button type="submit" class="send-btn-improved">
+              <span class="material-icons">send</span>
+            </button>
+          </form>
+          <p class="disclaimer-text">
+            Ensure your question relates to the uploaded PDF content.
+          </p>
+        </div>
+      </main>
+    </div>
+    <script src="script.js"></script>
+  </body>
+</html>
