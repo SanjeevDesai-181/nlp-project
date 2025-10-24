@@ -7,6 +7,16 @@ from nltk.tokenize import sent_tokenize
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
+# --------------------------------------------------------------------------------------------------
+# ||LLM based QA dependencies
+
+import google.generativeai as genai
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+import numpy as np
+
+# ||----------------------------------------------------------------------------------------------------
+
 nlp = spacy.load("en_core_web_sm")
 KNOWLEDGE_FILE_PATH = "knowledge.pdf"
 
@@ -117,8 +127,80 @@ def nlp_extractive_qa(question: str) -> str:
 def rule_based_qa(question: str) -> str:
     return nlp_extractive_qa(question)  # reuse same improved method
 
+# -----------------------------------------------------------
+# 7️⃣ Gemini LLM-Based Extractive QA (RAG style)
+# -----------------------------------------------------------
+
+# Configure Gemini with your API key
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
+
+def chunk_text(text: str, chunk_size: int = 800, overlap: int = 100) -> list[str]:
+    """
+    Split large document text into overlapping chunks for retrieval.
+    """
+    words = text.split()
+    chunks = []
+    start = 0
+    while start < len(words):
+        end = min(start + chunk_size, len(words))
+        chunk = " ".join(words[start:end])
+        chunks.append(chunk)
+        start += chunk_size - overlap
+    return chunks
+
+
+def retrieve_relevant_chunks(question: str, chunks: list[str], top_k: int = 3) -> list[str]:
+    """
+    Use TF-IDF + cosine similarity to retrieve top-k most relevant text chunks.
+    """
+    vectorizer = TfidfVectorizer(stop_words="english")
+    tfidf_matrix = vectorizer.fit_transform(chunks + [question])
+    question_vec = tfidf_matrix[-1]
+    similarities = cosine_similarity(question_vec, tfidf_matrix[:-1])[0]
+    top_indices = np.argsort(similarities)[-top_k:][::-1]
+    return [chunks[i] for i in top_indices if similarities[i] > 0.05]
+
+
 def llm_extractive_qa(question: str) -> str:
-    return "LLM Extractive QA not implemented yet."
+    """
+    LLM-based extractive QA using Gemini API.
+    Retrieves top chunks and asks Gemini to extract a factual answer.
+    """
+    text = load_pdf_content(KNOWLEDGE_FILE_PATH)
+    if not text:
+        return "Could not load knowledge base."
+
+    chunks = chunk_text(text)
+    relevant_chunks = retrieve_relevant_chunks(question, chunks)
+
+    if not relevant_chunks:
+        return "No relevant context found in the document."
+
+    context = "\n\n".join(relevant_chunks)
+
+    prompt = f"""
+    You are a factual question-answering assistant.
+    Extract the most accurate and concise answer from the provided context only.
+    Do not add external information.
+
+    Question: {question}
+
+    Context:
+    {context}
+
+    Answer (in 2–3 sentences, based only on the context):
+    """
+
+    try:
+        model = genai.GenerativeModel("gemini-2.5-flash")
+        response = model.generate_content(prompt)
+        return response.text.strip()
+    except Exception as e:
+        return f"Error querying Gemini: {e}"
+
+
+# || LLM based Genrative QA system section
 
 def llm_generative_qa(question: str) -> str:
     return "LLM Generative QA not implemented yet."
