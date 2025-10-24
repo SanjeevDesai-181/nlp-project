@@ -1,9 +1,12 @@
 document.addEventListener("DOMContentLoaded", () => {
+  // --- Element Selection ---
   const chatWindow = document.getElementById("chat-window");
-  const promptForm = document.getElementById("prompt-form");
+  const promptForm = document.getElementById("prompt-form-improved"); // Consistent ID from HTML
   const userInput = document.getElementById("user-input");
   const qaMode = document.getElementById("qa-mode");
   const historyList = document.getElementById("history-list");
+  const clearHistoryBtn = document.getElementById("clear-history-btn");
+  const sendBtn = document.getElementById("send-btn");
 
   // --- State Management ---
   let currentConversation = [];
@@ -11,51 +14,70 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // --- Utility Functions ---
 
-  // Function to create and append a chat bubble
+  /**
+   * Creates and appends a chat bubble to the chat window.
+   * @param {string} sender - 'user' or 'system'
+   * @param {string} message - The text content
+   * @param {string} mode - The QA mode used (for system messages)
+   */
   function createChatBubble(sender, message, mode = null) {
+    // Remove initial prompt if it exists
+    const initialPrompt = document.querySelector(".initial-prompt");
+    if (initialPrompt) {
+      initialPrompt.remove();
+    }
+
     const bubble = document.createElement("div");
     bubble.classList.add("chat-bubble", sender);
 
-    let avatarContent = sender === "user" ? "U" : "AI";
-    let avatarStyle = sender === "user" ? "person" : "psychology"; // Material Icon names
+    let avatarIcon = sender === "user" ? "person" : "psychology"; // Material Icon names
 
+    // Use template literal for clean HTML injection
     bubble.innerHTML = `
+            <div class="chat-avatar material-icons">${avatarIcon}</div>
             <div class="chat-content">
                 ${mode ? `<span class="mode-tag">${mode}</span>` : ""}
                 <p>${message}</p>
             </div>
-            <span class="chat-avatar material-icons">${avatarStyle}</span>
         `;
 
     chatWindow.appendChild(bubble);
     chatWindow.scrollTop = chatWindow.scrollHeight; // Auto-scroll to bottom
   }
 
-  // Function to save the current conversation to history
+  /**
+   * Stores the current conversation to history.
+   * @param {string} question - The user's initial question.
+   */
   function saveHistory(question) {
     if (question.trim() === "") return;
 
-    // Add a new entry to the history
+    // Create a short title for the history entry
+    const historyTitle =
+      question.length > 30 ? question.substring(0, 30) + "..." : question;
+
+    // Add a new entry to the history (at the beginning of the array)
     historyData.unshift({
       id: Date.now(),
-      question: question.substring(0, 50) + (question.length > 50 ? "..." : ""),
+      question: historyTitle,
       conversation: [...currentConversation],
     });
 
-    // Keep history limited (e.g., last 10 conversations)
-    historyData = historyData.slice(0, 10);
+    // Keep history limited (e.g., last 15 conversations)
+    historyData = historyData.slice(0, 15);
     localStorage.setItem("qaHistory", JSON.stringify(historyData));
 
-    // Reload the sidebar history
-    loadHistory();
+    loadHistory(); // Reload the sidebar history
   }
 
-  // Function to load and display history in the sidebar
+  /**
+   * Loads and displays history entries in the sidebar.
+   */
   function loadHistory() {
     historyList.innerHTML = "";
     if (historyData.length === 0) {
       historyList.innerHTML =
-        '<p class="no-history">Start a conversation to see history.</p>';
+        '<p class="no-history-message">Start a conversation...</p>';
       return;
     }
 
@@ -64,15 +86,18 @@ document.addEventListener("DOMContentLoaded", () => {
       historyItem.classList.add("history-item");
       historyItem.textContent = item.question;
       historyItem.dataset.index = index;
+
       historyItem.addEventListener("click", () => {
-        // Load clicked history item
         loadConversation(item.conversation);
       });
       historyList.appendChild(historyItem);
     });
   }
 
-  // Function to display a past conversation
+  /**
+   * Clears the chat window and loads a past conversation.
+   * @param {Array<Object>} conversation - The array of past chat messages.
+   */
   function loadConversation(conversation) {
     chatWindow.innerHTML = ""; // Clear current chat
     currentConversation = [...conversation]; // Set the new conversation
@@ -82,7 +107,9 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // --- Main Logic (Simulated QA System) ---
+  /**
+   * Handles the form submission (sending the question to the backend).
+   */
   promptForm.addEventListener("submit", (e) => {
     e.preventDefault();
     const question = userInput.value.trim();
@@ -97,37 +124,79 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // 2. Clear Input and Disable Button
     userInput.value = "";
-    document.getElementById("send-btn").disabled = true;
+    sendBtn.disabled = true;
 
-    // 3. Simulate API Call/Processing (Replace this with your actual Python/API call later)
-    setTimeout(() => {
-      let answer = "";
+    // --- ACTUAL API CALL to Python Backend ---
+    fetch("http://127.0.0.1:5000/api/answer", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ question: question, mode: mode }),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          // Handle HTTP error statuses (e.g., 400, 500)
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then((data) => {
+        // 4. Display System Message from API response
+        let answer = data.answer || "No response field received from server.";
 
-      // Generate a simulated response based on the selected mode
-      if (mode === "rule-based") {
-        answer = `[RULE-BASED EXTRACT] The simple algorithm found a keyword match in chunk 15 and extracted the surrounding text: "The main product is the X-900, which has a 5-year warranty and a required maintenance schedule of every 2,000 operational hours."`;
-      } else if (mode === "llm-extractive") {
-        answer = `[LLM EXTRACTIVE] Based on the top 3 retrieved chunks, the LLM identified the exact sentence that answers your question: "The current procedure for handling errors requires cross-validation steps with the data log, as mandated by Section 4.1.2 of the manual."`;
-      } else if (mode === "llm-generative") {
-        answer = `[LLM GENERATIVE] The system synthesized information from three separate paragraphs (sections A, B, and C) of the PDF to provide this cohesive answer: The recommended next step is to first verify the system integrity using the /check-status command. If the status returns 'GREEN', the fault is likely electrical, requiring a physical inspection. If the status is 'RED', proceed to the diagnostic section starting on page 45.`;
-      } else {
-        answer = "Error: Invalid QA Mode selected.";
-      }
+        // --- OPTIMIZATION: Remove [Mode-Prefix] from answer text ---
+        // This assumes the Python backend includes brackets and a space, e.g., "[Rule-Based] "
+        if (answer.startsWith("[")) {
+          answer = answer.substring(answer.indexOf("]") + 2).trim();
+        }
+        // -----------------------------------------------------------
 
-      // 4. Display System Message
-      createChatBubble("system", answer, modeLabel);
-      currentConversation.push({
-        sender: "system",
-        message: answer,
-        mode: modeLabel,
+        createChatBubble("system", answer, modeLabel);
+        currentConversation.push({
+          sender: "system",
+          message: answer,
+          mode: modeLabel,
+        });
+
+        // 5. Save History and Re-enable Button
+        saveHistory(question);
+      })
+      .catch((error) => {
+        console.error("API Error:", error);
+        // Display connection/server error message
+        const errorMessage = `[Server Error] Could not reach the Python backend (mode: ${mode}). Please ensure app.py is running.`;
+        createChatBubble("system", errorMessage, "Error");
+        currentConversation.push({
+          sender: "system",
+          message: errorMessage,
+          mode: "Error",
+        });
+      })
+      .finally(() => {
+        sendBtn.disabled = false;
       });
-
-      // 5. Save History and Re-enable Button
-      saveHistory(question);
-      document.getElementById("send-btn").disabled = false;
-    }, 1500); // Simulate 1.5 second latency
   });
 
-  // Initial load
+  /**
+   * Clears all history from localStorage and updates the UI.
+   */
+  clearHistoryBtn.addEventListener("click", () => {
+    if (confirm("Are you sure you want to clear all chat history?")) {
+      localStorage.removeItem("qaHistory");
+      historyData = [];
+      loadHistory(); // Update the sidebar
+      chatWindow.innerHTML = `
+                <div class="initial-prompt">
+                    <span class="material-icons gemini-icon">psychology</span>
+                    <h1>History Cleared. Start a new conversation.</h1>
+                    <p>I can answer questions like "Who is his father?" (Rule-Based) or "Summarize his T20I career." (Generative).</p>
+                </div>
+            `;
+      currentConversation = []; // Clear current session state
+    }
+  });
+
+  // --- Initial Load ---
   loadHistory();
 });

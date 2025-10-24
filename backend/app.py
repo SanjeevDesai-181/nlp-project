@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS 
 import os 
 # Assuming qa_engine.py is in the same directory
-from qa_engine import (
+from qa import (
     rule_based_qa, 
     llm_extractive_qa, 
     llm_generative_qa

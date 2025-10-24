@@ -3,8 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>QA System Demo</title>
+    <title>Multi-Mode QA System (Gemini Style)</title>
     <link rel="stylesheet" href="style.css" />
+    <!-- Use Google Material Icons -->
     <link
       href="https://fonts.googleapis.com/icon?family=Material+Icons"
       rel="stylesheet"
@@ -12,50 +13,91 @@
   </head>
   <body>
     <div class="app-container">
+      <!-- SIDEBAR (Fixed Left Navigation/History) -->
       <aside class="sidebar">
-        <h2 class="sidebar-title">QA Modes</h2>
+        <header class="sidebar-header-top">
+          <span class="logo-text">QA System</span>
+          <button class="nav-toggle-btn">
+            <span class="material-icons">menu_open</span>
+          </button>
+        </header>
 
-        <div class="mode-selector">
-          <label for="qa-mode">Select System:</label>
-          <select id="qa-mode" class="custom-dropdown">
-            <option value="rule-based">Simple Rule-Based (Extractive)</option>
-            <option value="llm-extractive">LLM-Based (Extractive)</option>
+        <!-- Mode Selection Controls -->
+        <div class="sidebar-controls">
+          <h3 class="controls-title">Select QA System:</h3>
+          <select id="qa-mode" class="mode-dropdown">
+            <option value="rule-based">
+              1. Intelligent Rule-Based (Extractive)
+            </option>
+            <option value="llm-extractive">
+              2. LLM-Based (Extractive RAG)
+            </option>
             <option value="llm-generative" selected>
-              LLM-Based (Generative)
+              3. LLM-Based (Generative RAG)
             </option>
           </select>
+          <p class="mode-tip">
+            Run Python backend (app.py) first for modes 2 & 3 to work.
+          </p>
         </div>
 
-        <hr />
+        <hr class="sidebar-divider" />
 
-        <h3 class="history-title">History</h3>
-        <div id="history-list" class="history-list">
-          <p class="no-history">Start a conversation to see history.</p>
-        </div>
-      </aside>
-
-      <main class="chat-main">
-        <div id="chat-window" class="chat-window">
-          <div class="initial-prompt">
-            <span class="material-icons gemini-icon">psychology</span>
-            <h1>How can I help you with your PDF knowledge base today?</h1>
+        <!-- History List (Scrollable) -->
+        <div class="history-section">
+          <h3 class="history-title">History</h3>
+          <div id="history-list" class="history-list">
+            <p class="no-history-message">Start a conversation...</p>
+            <!-- History Items injected here -->
           </div>
         </div>
 
-        <div class="prompt-container-improved">
-          <form class="prompt-form-improved">
+        <!-- Delete History Button -->
+        <button class="clear-history-btn" id="clear-history-btn">
+          <span class="material-icons">delete</span>
+          Clear All History
+        </button>
+      </aside>
+
+      <!-- MAIN CONTENT AREA -->
+      <main class="main-content-wrapper">
+        <!-- FIXED HEADER (Top Right Controls) -->
+        <header class="main-header">
+          <div class="header-controls">
+            <span class="status-badge">PRO</span>
+            <span class="material-icons user-avatar">person_2</span>
+          </div>
+        </header>
+
+        <!-- CHAT WINDOW -->
+        <div id="chat-window" class="chat-window">
+          <div class="initial-prompt">
+            <span class="material-icons gemini-icon">psychology</span>
+            <h1>Hello! Ask me about Rohit Sharma.</h1>
+            <p>
+              I can answer questions like "Who is his father?" (Rule-Based) or
+              "Summarize his T20I career." (Generative).
+            </p>
+          </div>
+          <!-- Chat Bubbles injected here -->
+        </div>
+
+        <!-- PROMPT INPUT CONTAINER (Fixed at Bottom Center) -->
+        <div class="prompt-container">
+          <form id="prompt-form-improved" class="prompt-form">
             <input
               type="text"
-              id="user-input-improved"
-              placeholder="Ask a question about the document... (e.g., 'What is the warranty period?')"
+              id="user-input"
+              placeholder="Ask a question about the document..."
               required
             />
-            <button type="submit" class="send-btn-improved">
+            <button type="submit" id="send-btn" class="send-btn">
               <span class="material-icons">send</span>
             </button>
           </form>
           <p class="disclaimer-text">
-            Ensure your question relates to the uploaded PDF content.
+            Ensure your Python backend server is running on
+            http://127.0.0.1:5000.
           </p>
         </div>
       </main>
